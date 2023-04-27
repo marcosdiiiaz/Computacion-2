@@ -7,6 +7,7 @@ parser.add_argument('file', help = 'Es el archivo a leer')
 parser.add_argument('average',nargs = '?', help = 'Promedio de longitud de palabras')
 
 args = parser.parse_args()
+#hola
 
 try:
     with open(args.file) as f:
