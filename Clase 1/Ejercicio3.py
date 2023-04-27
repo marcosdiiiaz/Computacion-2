@@ -4,7 +4,7 @@ import sys
 parser = argparse.ArgumentParser(description = 'Contar palabras, lineas del archivo y imprimir longitud promedio de las palabras') 
 
 parser.add_argument('file', help = 'Es el archivo a leer')
-parser.add_argument('average',nargs = '?', help = 'Promedio de longitud de palabras')
+parser.add_argument('average', nargs = '?', help = 'Promedio de longitud de palabras')
 
 args = parser.parse_args()
 
