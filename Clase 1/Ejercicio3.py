@@ -16,7 +16,7 @@ try:
     
     with open(args.file) as c:
         total_lines = sum(1 for line in c)
-        print('La cantidad de filas es: ',total_lines)
+        print('La cantidad de lineas es: ',total_lines)
 
 except FileNotFoundError:
     sys.stderr = open("errors.log","a")
