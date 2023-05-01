@@ -11,26 +11,35 @@
 
 import argparse
 import os
-import multiprocessing
 
-parser = argparse.ArgumentParser(description='Proceso padre lee .txt y Proceso hijo lo recibe, y cuenta cantidad de palabras')
+parser = argparse.ArgumentParser(description = 'Padre lee texto, hijo devuelve palabras por linea')
 
-parser.add_argument('file', help = 'Archivo .txt a leer', type = str)
-#parser.add_argument('-n', help = 'Cantidad de palabras por linea', type = int)
+parser.add_argument('file', help = 'Archivo que se lee')
 
 args = parser.parse_args()
 
+lectura, escritura = os.pipe()
+
 pid = os.fork()
 
-padre_conn, hijo_conn = multiprocessing.Pipe()
-
 if pid > 0:
+    os.close(lectura)
     with open(args.file) as f:
-        contenido = f.read()
-        for i in contenido:
-            padre_conn.send(i)
+        for linea in f:
+            os.write(escritura, linea.encode())
+    os.close(escritura)
 
 else:
-    
+    os.close(escritura)
+    datos = os.read(lectura, 1024)
+    texto = datos.decode()
+    linea = texto.split('\n')
 
+    cantidad_de_palabras = 0
+    fila = 1
+    
+    for escritura in linea:
+        cantidad_de_palabras = len(escritura.split())
+        print('En la fila', fila, 'hay', cantidad_de_palabras, 'palabras, que son:', [escritura])
+        fila += 1
 
