@@ -14,7 +14,7 @@ import os
 
 parser = argparse.ArgumentParser(description = 'Invertir el orden de lineas recibidas')
 
-parser.add_argument('file', help = 'Archivo que se lee')
+parser.add_argument('-f','--file', help = 'Archivo que se lee')
 
 args = parser.parse_args()
 
