@@ -19,15 +19,18 @@ parser.add_argument('-f','--file', help = 'Archivo que se lee')
 args = parser.parse_args()
 
 r, w = os.pipe()
+r1, w1 = os.pipe()
+
+todo = []
 
 try:
     pid = os.fork()
     if pid > 0:
-        os.close(r)
         with open(args.file) as f:
             content = f.read()
-            lines = content.split('\n')
-            os.write(w, '\n'.join(lines).encode())
+            lines = content
+            for i in lines:
+                os.write(w, i.encode())
             os.close(w)
 
     else:
@@ -36,11 +39,23 @@ try:
         os.close(r)
         lines = data.decode().split('\n')
         for i in lines:
-            pid = os.fork()
-            if pid == 0:
+            pid2 = os.fork()
+            if pid2 == 0:
                 mirrored = i[::-1]
-                print(mirrored)
+                todo.append(mirrored)
                 os._exit(0)
-            
+                
+            else:
+                for i in todo:
+                    os.close(r1)
+                    os.write(w1, i.encode())
+                    os.close(w1)
+
 except FileNotFoundError:
     print('No se encontro el archivo', args.file)
+
+while True:
+        data = os.read(r1, 1024)
+        if not data:
+            break
+        print(data)
