@@ -1,61 +1,69 @@
-#* Escriba un programa que abra un archivo de texto pasado por argumento utilizando el modificador -f.
+#Escriba un programa que abra un archvo de texto pasado por argumento utilizando el modificador -f.
 #* El programa deberá generar tantos procesos hijos como líneas tenga el archivo de texto.
 #* El programa deberá enviarle, vía pipes (os.pipe()), cada línea del archivo a un hijo.
-#* Cada hijo deberá invertir el orden de las letras de la línea recibida, y se lo enviará al proceso padre nuevamente,
-#también usando os.pipe().
-#* El proceso padre deberá esperar a que terminen todos los hijos, y mostrará por pantalla las líneas invertidas
-#que recibió por pipe.
+#* Cada hijo deberá invertir el orden de las letras de la línea recibida, y se lo enviará al proceso padre nuevamente, 
+# también usando os.pipe().
+# El proceso padre deberá esperar a que terminen todos los hijos, y mostrará por pantalla las líneas invertidas que recibió por pipe.
 #* Debe manejar los errores.
 
 #!/usr/bin/python3
 
-import argparse
 import os
+import argparse
 
-parser = argparse.ArgumentParser(description = 'Invertir el orden de lineas recibidas')
+def invertir_lineas(file):
+    r2, w2 = os.pipe()
 
-parser.add_argument('-f','--file', help = 'Archivo que se lee')
+    try:
+        with open(file) as f:
+            lines = f.readlines()
 
-args = parser.parse_args()
+            for i in range(len(lines)):
+                lines[i] = lines[i].rstrip('\n')
 
-r, w = os.pipe()
-r1, w1 = os.pipe()
+            for i in range(1, len(lines)):
+                if '\n' not in lines[i]:
+                    lines[i] += '\n'
 
-todo = []
+        for line in lines:
+            r1, w1 = os.pipe()
+            pid = os.fork()
+            if pid == 0:
+                os.close(w1)
+                data = os.read(r1, 1024)
+                data_d = data.decode()[::-1]
+                os.close(r1)
+                os.close(r2)
+                os.write(w2, data_d.encode())
+                os.close(w2)
+                exit(0)
 
-try:
-    pid = os.fork()
-    if pid > 0:
-        with open(args.file) as f:
-            content = f.read()
-            lines = content
-            for i in lines:
-                os.write(w, i.encode())
-            os.close(w)
+            elif pid < 0:
+                print('Error al hacer fork')
+                exit(1)
 
-    else:
-        os.close(w)
-        data = os.read(r, 1024)
-        os.close(r)
-        lines = data.decode().split('\n')
-        for i in lines:
-            pid2 = os.fork()
-            if pid2 == 0:
-                mirrored = i[::-1]
-                todo.append(mirrored)
-                os._exit(0)
-                
             else:
-                for i in todo:
-                    os.close(r1)
-                    os.write(w1, i.encode())
-                    os.close(w1)
+                os.close(r1)
+                os.write(w1, line.encode())
+                os.close(w1)
+                os.waitpid(pid, 0)
 
-except FileNotFoundError:
-    print('No se encontro el archivo', args.file)
+    except IOError:
+        print(f'Error al abrir el archivo: {file}')
 
-while True:
-        data = os.read(r1, 1024)
+    os.close(w2)
+
+    while True:
+        data = os.read(r2, 1024)
         if not data:
             break
-        print(data)
+        print(data.decode())
+    os.close(r2)
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Invertir lineas')
+    parser.add_argument('-f', '--file', help='Archivo a leer')
+    args = parser.parse_args()
+    file = args.file
+
+    invertir_lineas(file)
