@@ -1,91 +1,45 @@
-#FIFOS
-#1- Escribir un programa que realice la multiplicación de dos matrices de 2x2. 
-#Cada elemento deberá calcularse en un proceso distinto devolviendo el resultado en una fifo indicando el indice del elemento. 
-#El padre deberá leer en el fifo y mostrar el resultado final.
+#PIPES
+#Escribir un programa en Python que comunique dos procesos. 
+#El proceso padre deberá leer un archivo de texto y enviar cada línea del archivo al proceso hijo a través de un pipe. 
+#El proceso hijo deberá recibir las líneas del archivo y, por cada una de ellas, contar la cantidad de palabras 
+#que contiene y mostrar ese número.
+#2- Verificar si es posible que dos procesos hijos (o nieto) lean el PIPE del padre.
+#3- Verificar si el PIPE sigue existiendo cuendo el padre muere (termina el proceso), cuando el hijo muere [o cuendo mueren ambos]
+#$ ls -l /proc/[pid]/fd/
 
 #!/usr/bin/python3
-
-#python3 ejercicio01_A.py -m1 1 2 3 4 -m2 1 2 3 4
 
 import argparse
 import os
 
-parser = argparse.ArgumentParser(description = 'Multiplicacion de dos matrices 2x2')
+parser = argparse.ArgumentParser(description = 'Padre lee texto, hijo devuelve palabras por linea')
 
-parser.add_argument('-m1', nargs=4, type=int, metavar=('a', 'b', 'c', 'd'), help = 'matriz 1 en orden a b c d')
-parser.add_argument('-m2', nargs=4, type=int, metavar=('e', 'f', 'g', 'h'), help = 'matriz 2 en orden e f g h')
+parser.add_argument('file', help = 'Archivo que se lee')
 
 args = parser.parse_args()
 
-matriz1 = args.m1
-matriz2 = args.m2
-
-fifo_01 = '/tmp/fifo_01'
-fifo_02 = '/tmp/fifo_02'
-fifo_03 = '/tmp/fifo_03'
-fifo_04 = '/tmp/fifo_04'
-
-def child_01():
-    fifo = open(fifo_01, 'w')
-    calculo_01 = str(matriz1[0]*matriz2[0]+matriz1[1]*matriz2[2])
-    fifo.write(calculo_01)
-    fifo.close()
-
-def child_02():
-    fifo = open(fifo_02, 'w')
-    calculo_02 = str(matriz1[0]*matriz2[0]+matriz1[1]*matriz2[3])
-    fifo.write(calculo_02)
-    fifo.close()
-
-def child_03():
-    fifo = open(fifo_03, 'w')
-    calculo_03 = str(matriz1[2]*matriz2[0]+matriz1[3]*matriz2[2])
-    fifo.write(calculo_03)
-    fifo.close()
-
-def child_04():
-    fifo = open(fifo_04, 'w')
-    calculo_04 = str(matriz1[2]*matriz2[1]+matriz1[3]*matriz2[3])
-    fifo.write(calculo_04)
-    fifo.close()
-
-def parent():
-    fifo_in_01 = open(fifo_01, 'r')
-    fifo_in_02 = open(fifo_02, 'r')
-    fifo_in_03 = open(fifo_03, 'r')
-    fifo_in_04 = open(fifo_04, 'r')
-
-    pos1 = fifo_in_01.readline().rstrip()
-    pos2 = fifo_in_02.readline().rstrip()
-    pos3 = fifo_in_03.readline().rstrip()
-    pos4 = fifo_in_04.readline().rstrip()
-
-    fifo_in_01.close()
-    fifo_in_02.close()
-    fifo_in_03.close()
-    fifo_in_04.close()
-
-    mat = [[pos1,pos2],[pos3,pos4]]
-
-    for i in mat:
-        print(i)
-
-if not os.path.exists(fifo_01):
-    os.mkfifo(fifo_01)
-if not os.path.exists(fifo_02):
-    os.mkfifo(fifo_02)
-if not os.path.exists(fifo_03):
-    os.mkfifo(fifo_03)
-if not os.path.exists(fifo_04):
-    os.mkfifo(fifo_04)
+lectura, escritura = os.pipe()
 
 pid = os.fork()
 
 if pid > 0:
-    parent()
+    os.close(lectura)
+    with open(args.file) as f:
+        for linea in f:
+            os.write(escritura, linea.encode())
+    os.close(escritura)
 
 else:
-    child_01()
-    child_02()
-    child_03()
-    child_04()
+    os.close(escritura)
+    datos = os.read(lectura, 1024)
+    texto = datos.decode()
+    linea = texto.split('\n')
+
+    cantidad_de_palabras = 0
+    fila = 1
+    
+    for escritura in linea:
+        cantidad_de_palabras = len(escritura.split())
+        print('En la fila', fila, 'hay', cantidad_de_palabras, 'palabras, que son:', [escritura])
+        fila += 1
+
