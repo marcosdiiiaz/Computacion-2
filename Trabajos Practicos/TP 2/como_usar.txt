@@ -1,0 +1,5 @@
+Paso 1 - Ejecutar servidor: python3 main.py -i 127.0.0.1 -p 4200
+
+Paso 2 - (en otra terminal) Utilizar curl: curl -X POST -H "Content-Type: image/jpeg" --data-binary @gato.jpg http://127.0.0.1:4200 --output gatonegro.jpg
+
+Paso 3 - Disfrutar :3
